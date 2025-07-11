@@ -1,27 +1,32 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/next"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/reactions",
-      "dest": "/api/reactions"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/$1"
-    }
-  ],
-  "env": {
-    "NODE_ENV": "production"
-  },
-  "functions": {
-    "src/app/api/reactions/route.ts": {
-      "maxDuration": 300
-    }
-  }
+     "functions": {
+          "src/app/api/reactions/route.ts": {
+               "maxDuration": 30
+          }
+     },
+     "rewrites": [
+          {
+               "source": "/api/reactions",
+               "destination": "/api/reactions"
+          }
+     ],
+     "headers": [
+          {
+               "source": "/api/reactions",
+               "headers": [
+                    {
+                         "key": "Cache-Control",
+                         "value": "no-cache"
+                    },
+                    {
+                         "key": "Connection",
+                         "value": "keep-alive"
+                    },
+                    {
+                         "key": "Content-Type",
+                         "value": "text/plain; charset=utf-8"
+                    }
+               ]
+          }
+     ]
 }
