@@ -70,7 +70,7 @@ Halaman utama dengan navigasi dan panduan setup
 
 Edit `server.js`:
 ```javascript
-const port = process.env.PORT || 3001; // Ganti dari 3000
+const port = process.env.PORT || 3000; // Ganti dari 3000
 ```
 
 ### Menambah Emoji Reaksi
