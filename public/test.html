@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Socket.IO Test</title>
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+    <h1>Socket.IO Connection Test</h1>
+    <div id="status">Connecting...</div>
+    <button onclick="sendTestReaction()">Send Test Reaction</button>
+    
+    <script>
+        const socket = io();
+        
+        socket.on('connect', () => {
+            document.getElementById('status').innerHTML = 'Connected! Socket ID: ' + socket.id;
+            console.log('Connected to server');
+        });
+        
+        socket.on('disconnect', () => {
+            document.getElementById('status').innerHTML = 'Disconnected';
+            console.log('Disconnected from server');
+        });
+        
+        socket.on('reaction', (data) => {
+            console.log('Received reaction:', data);
+        });
+        
+        function sendTestReaction() {
+            socket.emit('reaction', {
+                emoji: '🎉',
+                timestamp: Date.now(),
+                id: 'test-' + Date.now()
+            });
+            console.log('Sent test reaction');
+        }
+    </script>
+</body>
+</html>
