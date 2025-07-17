@@ -130,17 +130,17 @@ export default function HomePage() {
     // Name input form
     if (!isNameSet) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center p-4">
-                <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full">
+            <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
+                <div className="bg-gray-800 rounded-lg shadow-xl p-8 max-w-md w-full">
                     <div className="text-center mb-6">
                         <div className="text-6xl mb-4">🎭</div>
-                        <h1 className="text-3xl font-bold text-gray-800 mb-2">Overlay Reaction</h1>
-                        <p className="text-gray-600">Masukkan nama Anda untuk mulai mengirim reaksi</p>
+                        <h1 className="text-3xl font-bold text-white mb-2">Overlay Reaction</h1>
+                        <p className="text-gray-300">Masukkan nama Anda untuk mulai mengirim reaksi</p>
                     </div>
 
                     <form onSubmit={handleNameSubmit} className="space-y-4">
                         <div>
-                            <label htmlFor="userName" className="block text-sm font-medium text-gray-700 mb-2">
+                            <label htmlFor="userName" className="block text-sm font-medium text-gray-300 mb-2">
                                 Nama Anda
                             </label>
                             <input
@@ -148,7 +148,7 @@ export default function HomePage() {
                                 id="userName"
                                 value={userName}
                                 onChange={(e) => setUserName(e.target.value)}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder-gray-400"
                                 placeholder="Masukkan nama Anda..."
                                 required
                                 maxLength={20}
@@ -163,6 +163,22 @@ export default function HomePage() {
                             Mulai Mengirim Reaksi 🚀
                         </button>
                     </form>
+
+                    <div className="mt-6">
+                        <footer className="text-center">
+                            <p className="text-sm text-gray-300">
+                                Made with ❤️ by{' '}
+                                <a
+                                    href="https://hi.oktaa.my.id"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-purple-400 hover:text-purple-300 font-semibold transition-colors"
+                                >
+                                    oktaa.my.id
+                                </a>
+                            </p>
+                        </footer>
+                    </div>
                 </div>
             </div>
         );
