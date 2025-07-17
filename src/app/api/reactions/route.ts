@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 interface ReactionData {
   emoji: string;
+  userName: string;
   timestamp: number;
   id: string;
 }
