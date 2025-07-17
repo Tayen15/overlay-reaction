@@ -1,95 +1,230 @@
-import Link from 'next/link';
+'use client';
 
-export default function Home() {
-    return (
-        <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
-            <div className="max-w-4xl mx-auto text-center">
-                <div className="bg-gray-800 rounded-lg shadow-xl p-8 mb-8 border border-gray-700">
-                    <h1 className="text-4xl font-bold text-white mb-4">
-                        🎭 Overlay Reaksi Interaktif
-                    </h1>
-                    <p className="text-lg text-gray-300 mb-8">
-                        Sistem overlay reaksi real-time untuk streaming OBS dengan kontrol dari ponsel
-                    </p>
+import { useState, useEffect } from 'react';
 
-                    <div className="grid md:grid-cols-2 gap-6 mb-6">
-                        <div className="bg-gradient-to-br from-green-600 to-green-700 rounded-lg p-6 text-white">
-                            <div className="text-4xl mb-4">📱</div>
-                            <h2 className="text-2xl font-bold mb-4">Halaman Kontrol</h2>
-                            <p className="mb-6 opacity-90">
-                                Buka di ponsel untuk mengirim reaksi ke stream
-                            </p>
-                            <div className="space-y-3">
-                                <Link
-                                    href="/control"
-                                    className="block bg-gray-800 text-green-400 font-semibold py-3 px-6 rounded-lg hover:bg-gray-700 transition-colors text-center"
-                                >
-                                    Socket.IO Version →
-                                </Link>
-                                <Link
-                                    href="/control-vercel"
-                                    className="block bg-green-800 text-green-200 font-semibold py-3 px-6 rounded-lg hover:bg-green-700 transition-colors text-center"
-                                >
-                                    Vercel Version →
-                                </Link>
-                            </div>
-                        </div>
+interface ReactionData {
+    id: string;
+    emoji: string;
+    userName: string;
+    timestamp: number;
+}
 
-                        <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-lg p-6 text-white">
-                            <div className="text-4xl mb-4">🖥️</div>
-                            <h2 className="text-2xl font-bold mb-4">Overlay OBS</h2>
-                            <p className="mb-6 opacity-90">
-                                Tambahkan sebagai Browser Source di OBS
-                            </p>
-                            <div className="space-y-3">
-                                <Link
-                                    href="/overlay"
-                                    className="block bg-gray-800 text-purple-400 font-semibold py-3 px-6 rounded-lg hover:bg-gray-700 transition-colors text-center"
-                                >
-                                    Socket.IO Version →
-                                </Link>
-                                <Link
-                                    href="/overlay-vercel"
-                                    className="block bg-purple-800 text-purple-200 font-semibold py-3 px-6 rounded-lg hover:bg-purple-700 transition-colors text-center"
-                                >
-                                    Vercel Version →
-                                </Link>
-                            </div>
-                        </div>
+export default function HomePage() {
+    const [userName, setUserName] = useState('');
+    const [isNameSet, setIsNameSet] = useState(false);
+    const [isConnected, setIsConnected] = useState(false);
+    const [recentReactions, setRecentReactions] = useState<ReactionData[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+
+    const reactionButtons = [
+        { emoji: '👍', label: 'Like' },
+        { emoji: '❤️', label: 'Love' },
+        { emoji: '😂', label: 'Laugh' },
+        { emoji: '🎉', label: 'Party' },
+        { emoji: '🔥', label: 'Fire' },
+        { emoji: '👏', label: 'Clap' },
+        { emoji: '😱', label: 'Shock' },
+        { emoji: '🤔', label: 'Think' },
+    ];
+
+    useEffect(() => {
+        // Load saved name from localStorage
+        const savedName = localStorage.getItem('overlayUserName');
+        if (savedName) {
+            setUserName(savedName);
+            setIsNameSet(true);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (isNameSet) {
+            // Initialize SSE connection
+            const eventSource = new EventSource('/api/reactions');
+
+            eventSource.onopen = () => {
+                setIsConnected(true);
+                console.log('Connected to SSE');
+            };
+
+            eventSource.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'reaction') {
+                        const reaction: ReactionData = {
+                            id: data.id || `${Date.now()}-${Math.random()}`,
+                            emoji: data.emoji,
+                            userName: data.userName,
+                            timestamp: data.timestamp
+                        };
+                        setRecentReactions((prev: ReactionData[]) => [reaction, ...prev.slice(0, 4)]);
+                    }
+                } catch (error) {
+                    console.error('Error parsing SSE message:', error);
+                }
+            };
+
+            eventSource.onerror = () => {
+                setIsConnected(false);
+                console.log('SSE connection error');
+
+                // Auto-reconnect after 3 seconds
+                setTimeout(() => {
+                    if (eventSource.readyState === EventSource.CLOSED) {
+                        window.location.reload();
+                    }
+                }, 3000);
+            };
+
+            return () => {
+                eventSource.close();
+            };
+        }
+    }, [isNameSet]);
+
+    const handleNameSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (userName.trim()) {
+            localStorage.setItem('overlayUserName', userName.trim());
+            setIsNameSet(true);
+        }
+    };
+
+    const sendReaction = async (emoji: string) => {
+        if (!isConnected || !userName.trim() || isLoading) return;
+
+        setIsLoading(true);
+
+        try {
+            const reaction = {
+                emoji,
+                userName: userName.trim(),
+                timestamp: Date.now(),
+                id: `${Date.now()}-${Math.random().toString(36).substring(7)}`
+            };
+
+            const response = await fetch('/api/reactions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(reaction),
+            });
+
+            if (response.ok) {
+                console.log(`Sent reaction: ${emoji} from ${userName}`);
+            }
+        } catch (error) {
+            console.error('Error sending reaction:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const resetName = () => {
+        localStorage.removeItem('overlayUserName');
+        setUserName('');
+        setIsNameSet(false);
+        setRecentReactions([]);
+    };
+
+    // Name input form
+    if (!isNameSet) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center p-4">
+                <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full">
+                    <div className="text-center mb-6">
+                        <div className="text-6xl mb-4">🎭</div>
+                        <h1 className="text-3xl font-bold text-gray-800 mb-2">Overlay Reaction</h1>
+                        <p className="text-gray-600">Masukkan nama Anda untuk mulai mengirim reaksi</p>
                     </div>
+
+                    <form onSubmit={handleNameSubmit} className="space-y-4">
+                        <div>
+                            <label htmlFor="userName" className="block text-sm font-medium text-gray-700 mb-2">
+                                Nama Anda
+                            </label>
+                            <input
+                                type="text"
+                                id="userName"
+                                value={userName}
+                                onChange={(e) => setUserName(e.target.value)}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                placeholder="Masukkan nama Anda..."
+                                required
+                                maxLength={20}
+                            />
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={!userName.trim()}
+                            className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105"
+                        >
+                            Mulai Mengirim Reaksi 🚀
+                        </button>
+                    </form>
+                </div>
+            </div>
+        );
+    }
+
+    // Main control interface
+    return (
+        <div className="min-h-screen bg-gray-900 p-4">
+            <div className="max-w-md mx-auto">
+                <div className="bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+                    <h1 className="text-2xl font-bold text-center text-white mb-4">
+                        Kontrol Reaksi Stream
+                    </h1>
+
+                    <div className="flex items-center justify-center mb-4">
+                        <div className={`w-3 h-3 rounded-full mr-2 ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                        <span className={`font-medium ${isConnected ? 'text-green-400' : 'text-red-400'}`}>
+                            {isConnected ? 'Terhubung' : 'Tidak Terhubung'}
+                        </span>
+                    </div>
+
+                    <div className="flex items-center justify-center mb-4 p-3 bg-gray-700 rounded-lg">
+                        <span className="text-gray-300">👤 {userName}</span>
+                        <button
+                            onClick={resetName}
+                            className="ml-3 text-xs bg-gray-600 hover:bg-gray-500 text-gray-200 px-3 py-1 rounded transition-colors"
+                        >
+                            Ganti Nama
+                        </button>
+                    </div>
+
+                    {recentReactions.length > 0 && (
+                        <div className="mb-4 p-3 bg-gray-700 rounded-lg">
+                            <h3 className="text-sm font-medium text-gray-300 mb-2">Reaksi Terakhir:</h3>
+                            <div className="flex flex-wrap gap-2">
+                                {recentReactions.map((reaction: ReactionData) => (
+                                    <div key={reaction.id} className="flex items-center gap-1 text-sm bg-gray-800 px-2 py-1 rounded">
+                                        <span className="text-lg">{reaction.emoji}</span>
+                                        <span className="text-gray-300">{reaction.userName}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
-                {/* <div className="bg-white rounded-lg shadow-xl p-6">
-                    <h3 className="text-2xl font-bold text-gray-800 mb-4">📋 Panduan Setup</h3>
-                    <div className="grid md:grid-cols-3 gap-6 text-left">
-                        <div>
-                            <div className="text-2xl mb-2">1️⃣</div>
-                            <h4 className="font-semibold text-gray-800 mb-2">Jalankan Server</h4>
-                            <p className="text-sm text-gray-600">
-                                Pastikan aplikasi Next.js berjalan di port 3000
-                            </p>
-                        </div>
-                        <div>
-                            <div className="text-2xl mb-2">2️⃣</div>
-                            <h4 className="font-semibold text-gray-800 mb-2">Setup OBS</h4>
-                            <p className="text-sm text-gray-600">
-                                Tambahkan Browser Source dengan URL: <br />
-                                <code className="bg-gray-100 px-1 rounded">http://localhost:3000/overlay</code>
-                            </p>
-                        </div>
-                        <div>
-                            <div className="text-2xl mb-2">3️⃣</div>
-                            <h4 className="font-semibold text-gray-800 mb-2">Kontrol Ponsel</h4>
-                            <p className="text-sm text-gray-600">
-                                Buka halaman kontrol di ponsel dengan IP komputer: <br />
-                                <code className="bg-gray-100 px-1 rounded">http://[IP]:3000/control</code>
-                            </p>
-                        </div>
-                    </div>
-                </div> */}
+                <div className="grid grid-cols-2 gap-4">
+                    {reactionButtons.map((reaction) => (
+                        <button
+                            key={reaction.emoji}
+                            onClick={() => sendReaction(reaction.emoji)}
+                            disabled={!isConnected || isLoading}
+                            className="bg-gray-800 rounded-lg shadow-lg p-6 text-center transition-all duration-200 transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-700 focus:ring-2 focus:ring-gray-600"
+                        >
+                            <div className="text-4xl mb-2">{reaction.emoji}</div>
+                            <div className="text-sm font-medium text-gray-300">{reaction.label}</div>
+                        </button>
+                    ))}
+                </div>
 
-                <div className="w-full mt-8">
-                    <footer className="bg-gray-800 rounded-lg shadow-xl p-6 text-center border border-gray-700">
+                <div className="mt-6">
+                    <footer className="bg-gray-800 rounded-lg shadow-lg p-4 text-center border border-gray-700">
                         <div className="text-gray-300">
                             <p className="text-sm">
                                 Made with ❤️ by{' '}
