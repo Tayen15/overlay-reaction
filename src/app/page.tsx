@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useAnalytics } from '../hooks/useAnalytics';
 
 interface ReactionData {
     id: string;
@@ -15,6 +16,9 @@ export default function HomePage() {
     const [isConnected, setIsConnected] = useState(false);
     const [recentReactions, setRecentReactions] = useState<ReactionData[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+
+    // Analytics integration
+    const { isAnalyticsEnabled, trackReaction } = useAnalytics(isNameSet ? userName : null);
 
     const reactionButtons = [
         { emoji: '👍', label: 'Like' },
@@ -112,6 +116,11 @@ export default function HomePage() {
 
             if (response.ok) {
                 console.log(`Sent reaction: ${emoji} from ${userName}`);
+
+                // Track analytics if enabled
+                if (isAnalyticsEnabled) {
+                    await trackReaction(emoji);
+                }
             }
         } catch (error) {
             console.error('Error sending reaction:', error);
