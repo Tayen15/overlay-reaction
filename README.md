@@ -9,6 +9,7 @@ Sistem overlay reaksi real-time untuk streaming OBS dengan kontrol dari ponsel m
 - **Responsive Design**: Tampilan optimal di berbagai perangkat
 - **Easy Setup**: Mudah diintegrasikan dengan OBS Studio
 - **Transparent Background**: Background transparan untuk overlay OBS
+- **Analytics**: Tracking reaksi pengguna dengan Firebase (opsional)
 
 ## 🚀 Quick Start
 
@@ -96,6 +97,20 @@ Edit CSS di `src/app/overlay/page.tsx`:
   }
   /* Sesuaikan keyframes */
 }
+```
+
+### Firebase Analytics (Opsional)
+
+Untuk tracking reaksi pengguna:
+1. Copy `.env.local` dan isi konfigurasi Firebase
+2. Restart development server
+3. Analytics otomatis aktif jika Firebase dikonfigurasi
+
+```bash
+# .env.local
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
+NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key
+# ... variabel Firebase lainnya
 ```
 
 ## 🎨 Customization
